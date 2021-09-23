@@ -43,6 +43,8 @@ class TransformerNetwork(nn.Module):
 
         output_tensor = self.__final_conv(output_tensor)
 
-        return self.__activation_tanh(output_tensor)
+        # return self.__activation_tanh(output_tensor)
+
+        return output_tensor
 
 
