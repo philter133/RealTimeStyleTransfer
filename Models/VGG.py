@@ -10,9 +10,6 @@ class VGG16(nn.Module):
 
         self.__features = models.vgg16(pretrained=True).features
 
-        for param in self.__features.parameters():
-            param.requires_grad = False
-
         self.__relu_1_2 = nn.Sequential()
         self.__relu_2_2 = nn.Sequential()
         self.__relu_3_3 = nn.Sequential()
@@ -27,6 +24,9 @@ class VGG16(nn.Module):
                 self.__relu_3_3.add_module(str(x), self.__features[x])
             else:
                 self.__relu_4_3.add_module(str(x), self.__features[x])
+
+        for param in self.parameters():
+            param.requires_grad = False
 
     def forward(self, image_tensor: torch.Tensor):
         relu_dict = {}

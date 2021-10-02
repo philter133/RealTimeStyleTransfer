@@ -20,11 +20,12 @@ class TransformerNetwork(nn.Module):
         self.__block4 = ResidualBlock()
         self.__block5 = ResidualBlock()
 
-        self.__deconv1 = Deconvolution(128, 64, (3, 3), 2, 1)
-        self.__deconv2 = Deconvolution(64, 32, (3, 3), 2, 1)
+        self.__deconv1 = Deconvolution(128, 64, 3, 1, upsample=2)
+        self.__deconv2 = Deconvolution(64, 32, 3, 1, upsample=2)
 
-        self.__final_conv = nn.Conv2d(32, 3, (9, 9), stride=1, padding=4)
-        self.__activation_tanh = nn.Tanh()
+        self.__padding_layer = nn.ReflectionPad2d(4)
+        self.__final_conv = nn.Conv2d(32, 3, (9, 9), stride=1)
+        # self.__activation_tanh = nn.Tanh()
 
     def forward(self, input_tensor) -> torch.Tensor:
 
@@ -41,7 +42,7 @@ class TransformerNetwork(nn.Module):
         output_tensor = self.__deconv1(output_tensor)
         output_tensor = self.__deconv2(output_tensor)
 
-        output_tensor = self.__final_conv(output_tensor)
+        output_tensor = self.__final_conv(self.__padding_layer(output_tensor))
 
         # return self.__activation_tanh(output_tensor)
 

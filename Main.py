@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader
-from Utils.utilities import view_image, load_image, compute_gram
+from Utils.utilities import view_image, load_image, compute_gram, save_image
 from Models.VGG import VGG16
 from Models.Transformer import TransformerNetwork
 
@@ -21,7 +21,7 @@ class StyleTransfer:
         self.__model = TransformerNetwork().to(self.__device)
         self.__model.load_state_dict(checkpoint["model_state_dict"])
 
-    def transform_image(self, content_image_path):
+    def transform_image(self, content_image_path,save_path):
         with torch.no_grad():
             self.__model.eval()
 
@@ -34,6 +34,9 @@ class StyleTransfer:
             content_tensor = torch.unsqueeze(style_tf(content_image), dim=0).to(self.__device)
 
             view_image(torch.squeeze(self.__model(content_tensor), dim=0).cpu())
+            save_image(torch.squeeze(self.__model(content_tensor), dim=0).cpu(), save_path)
+
+
 
 
 class RealTimeStyleTransfer:
@@ -106,8 +109,7 @@ class RealTimeStyleTransfer:
     def transform_image(self, content_image_path):
         self.__transformer.eval()
 
-        style_tf = transforms.Compose([transforms.Resize(256),
-                                       transforms.CenterCrop(256),
+        style_tf = transforms.Compose([
                                        transforms.ToTensor(),
                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                             std=[0.229, 0.224, 0.225])])
@@ -116,7 +118,6 @@ class RealTimeStyleTransfer:
         content_tensor = torch.unsqueeze(style_tf(content_image), dim=0).to(self.__device)
 
         view_image(torch.squeeze(self.__transformer(content_tensor), dim=0).cpu())
-        # view_image(torch.squeeze(content_tensor, dim=0).cpu())
 
     def train_model_one_epoch(self):
 
@@ -177,17 +178,17 @@ class RealTimeStyleTransfer:
             self.__optim.step()
 
             if count % 1000 == 0:
-                self.transform_image("./Data/ContentTestImages/test1.jpg")
+                self.transform_image("./Data/ContentTestImages/city.jpg")
                 self.__transformer.train()
 
 
 if __name__ == '__main__':
     style_transfer = RealTimeStyleTransfer(4,
                                            1e-3,
-                                           1e10,
+                                           4e10,
                                            1e5,
-                                           1e-7,
-                                           "./Data/Style/mosaic.jpg",
+                                           0,
+                                           "./Data/Style/edtaonisl.png",
                                            "./Data/Coco/2014/Train")
 
     epochs = 2
@@ -196,7 +197,7 @@ if __name__ == '__main__':
         style_transfer.train_model_one_epoch()
 
     style_transfer.transform_image("./Data/ContentTestImages/test1.jpg")
-    style_transfer.save_model("./SavedModels/Mosaic.model")
+    style_transfer.save_model("./SavedModels/JuneTree.model")
 
-    # style_transfer = StyleTransfer("./SavedModels/Mosaic.model")
-    # style_transfer.transform_image("./Data/ContentTestImages/test2.jpeg")
+    style_transfer = StyleTransfer("./SavedModels/JuneTree.model")
+    style_transfer.transform_image("./Data/ContentTestImages/test2.jpg", "D:/RealTimeStyleTransfer/SavedPics/temp.jpg")
