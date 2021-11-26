@@ -23,10 +23,13 @@ model_dict = {}
 for i in os.listdir("./SavedModels"):
     path = os.path.join(".", "SavedModels", i)
 
-    checkpoint = torch.load(path)
+    if device_name == "cpu":
+        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+    else:
+        checkpoint = torch.load(path)
+
     model = TransformerNetwork().to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
-
     model_name = i.split(".model")[0]
     model_dict.update({model_name: model})
 
