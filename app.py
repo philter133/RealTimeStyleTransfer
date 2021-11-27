@@ -63,6 +63,8 @@ def transform_image(image_bytes: bytes,
         filter_model.eval()
 
         img_tensor = torch.unsqueeze(pic_tf(img), dim=0).to(device)
+
+        img_tensor = img_tensor[:, :3, :, :]
         output = torch.squeeze(filter_model(img_tensor), dim=0).cpu()
 
         output = output.detach().clone().numpy()
