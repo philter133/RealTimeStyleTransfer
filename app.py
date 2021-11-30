@@ -33,7 +33,6 @@ for i in os.listdir("./SavedModels"):
     model_name = i.split(".model")[0]
     model_dict.update({model_name: model})
 
-
 """
 Feeds image into model returning the filtered image
 
@@ -50,7 +49,6 @@ returns the PIL image object
 def transform_image(image_bytes: bytes,
                     filter_model: torch.nn.Module,
                     size: int) -> PIL.Image.Image:
-
     transformer_list = [transforms.Resize(size),
                         transforms.CenterCrop(size),
                         transforms.ToTensor(),
@@ -64,7 +62,7 @@ def transform_image(image_bytes: bytes,
 
         img_tensor = torch.unsqueeze(pic_tf(img), dim=0).to(device)
 
-        img_tensor = img_tensor[:, :3, :, :]
+        img_tensor = img_tensor[:, :3, :, :]  # For png images makes sure it only uses three channels
         output = torch.squeeze(filter_model(img_tensor), dim=0).cpu()
 
         output = output.detach().clone().numpy()
