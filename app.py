@@ -91,7 +91,7 @@ returns the image in bytes
 """
 
 
-@app.route('/apply-filter', methods=['GET'])
+@app.route('/apply-filter', methods=['POST', 'GET'])
 def apply_filter():
     file = request.files['file']
     name = request.form['name']
