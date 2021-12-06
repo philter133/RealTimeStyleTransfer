@@ -19,7 +19,6 @@ def bw_to_color(img_path: str,
                 transformer: transforms.Compose,
                 generator: Unet,
                 device: torch.device) -> None:
-
     with torch.no_grad():
         generator.eval()
         img = Image.open(img_path).convert("RGB")
@@ -141,7 +140,9 @@ class TrainModel:
                  lr_d: float,
                  b_1: float,
                  b_2: float,
-                 lambda_l1: float):
+                 lambda_l1: float,
+                 model_state_dict=None):
+
         self.__device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.__trl = train_loader
@@ -166,6 +167,14 @@ class TrainModel:
                                              betas=(b_1, b_2))
 
         self.__lambda = lambda_l1
+
+        if model_state_dict is not None:
+            checkpoint = torch.load(model_state_dict)
+
+            self.__generator.load_state_dict(checkpoint["generator"])
+            self.__discriminator.load_state_dict(checkpoint["discriminator"])
+            self.__optim_disc.load_state_dict(checkpoint["optimizer_disc"])
+            self.__optim_gen.load_state_dict(checkpoint["optimizer_gen"])
 
     def train_one_epoch(self,
                         epoch: int):
@@ -262,7 +271,6 @@ class TrainModel:
         count = 0
 
         with torch.no_grad():
-
             for L, ab in tqdm(self.__val, desc="Val", unit="batch"):
                 ab = ab.to(self.__device)
                 L = L.to(self.__device)
@@ -281,15 +289,25 @@ class TrainModel:
     def get_generator(self) -> Unet:
         return self.__generator
 
-    def save_generator(self, path: str):
-        torch.save(self.__generator.state_dict(), path)
+    def get_optim(self):
+        return self.__optim_gen, self.__optim_disc
+
+    def save_generator(self,
+                       path: str,
+                       epoch: int):
+
+        torch.save({"generator": self.__generator.state_dict(),
+                    "discriminator": self.__discriminator.state_dict(),
+                    "optimizer_disc": self.__optim_disc.state_dict(),
+                    "optimizer_gen": self.__optim_gen.state_dict(),
+                    "epoch": epoch}, path)
 
     def get_device(self):
         return self.__device
 
 
 if __name__ == '__main__':
-    bw_file_path = "D:/Downloads/barbary.jpg"
+    bw_file_path = "D:/Downloads/cast.jpg"
 
     size = 256
     batch_size = 16
@@ -330,23 +348,30 @@ if __name__ == '__main__':
                          2e-4,
                          0.5,
                          0.999,
-                         100.0)
+                         100.0,
+                         "./SavedModels/Restorer.model")
 
     EPOCHS = 100
+    gen = trainer.get_generator()
+    bw_to_color(bw_file_path,
+                transforms.Compose(transformer_list[:-2]),
+                gen,
+                device=trainer.get_device())
 
-    for epoch in range(EPOCHS):
-
-        trainer.train_one_epoch(epoch)
-        print()
-        trainer.test_one_epoch(epoch)
-
-        if epoch != 0 and epoch % 10 == 0:
-            gen = trainer.get_generator()
-            bw_to_color(bw_file_path,
-                        transforms.Compose(transformer_list[:-2]),
-                        gen,
-                        device=trainer.get_device())
-
-    trainer.validate_model()
-
-    trainer.save_generator("/SavedModels/Restorer.model")
+    # for epoch in range(EPOCHS):
+    #     trainer.train_one_epoch(epoch)
+    #     print()
+    #
+    #     if epoch != 0 and epoch % 10 == 0:
+    #         trainer.test_one_epoch(epoch)
+    #
+    #     trainer.save_generator("./SavedModels/Restorer.model",
+    #                            epoch)
+    #
+    #     gen = trainer.get_generator()
+    #     bw_to_color(bw_file_path,
+    #                 transforms.Compose(transformer_list[:-2]),
+    #                 gen,
+    #                 device=trainer.get_device())
+    #
+    # trainer.validate_model()

@@ -3,6 +3,7 @@
 Data/
 
 # Configuratiom
+.env
 config.ini
 test.py
 Models/__pycache__/VGG.cpython-39.pyc

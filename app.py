@@ -1,13 +1,19 @@
-from flask import Flask, request, send_file
+import uuid
+
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
+from itsdangerous import json
+
 from Models.Transformer import TransformerNetwork
 from torchvision import transforms
-import flask
+from Database.Mongo import PhilterDB
 from PIL import Image
 import torch
 import os
 import io
 import PIL
+import flask
+import flask_pymongo
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -32,6 +38,12 @@ for i in os.listdir("./SavedModels"):
     model.load_state_dict(checkpoint["model_state_dict"])
     model_name = i.split(".model")[0]
     model_dict.update({model_name: model})
+
+"""
+DATABASE
+"""
+
+db = PhilterDB()
 
 """
 Feeds image into model returning the filtered image
@@ -115,6 +127,50 @@ def apply_filter():
     img_io.seek(0)
 
     return send_file(img_io, mimetype='image/jpeg')
+
+
+@app.route('/login', methods=["POST", "GET"])
+def login():
+    email = request.form['email']
+    name = request.form["name"]
+
+    match_count = db.login_user(email,
+                                name)
+
+    return jsonify({"registered": False} if match_count == 1 else {"registered": True})
+
+
+@app.route('/save-image', methods=["POST", "GET"])
+def save_image():
+    title = request.form["title"].upper()
+    description = request.form["description"]
+    file = request.files["file"]
+
+    image_id = str(uuid.uuid4())
+
+    db.save_image(
+        image_id,
+        title,
+        file,
+        description=description)
+
+    return jsonify({"imageId": image_id})
+
+
+@app.route('/save-cluster', methods=["POST", "GET"])
+def save_image_cluster():
+    user_id = request.form["userId"]
+    tag = request.form["tag"].upper()
+    image_list = json.loads(request.form["imageList"])
+    algorithm_type = request.form["algorithm"].upper()
+
+    inserted_id = db.save_cluster(user_id,
+                                  image_list,
+                                  algorithm_type,
+                                  tag)
+
+    return jsonify({"status": 200,
+                    "inserted_id": str(inserted_id)})
 
 
 if __name__ == "__main__":
