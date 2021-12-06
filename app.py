@@ -1,9 +1,13 @@
 import uuid
 
+import numpy as np
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 from itsdangerous import json
+from skimage import color
 
+from ImageColorization.Architectures.Generator import Unet
+from ImageColorization.utils import lab_to_rgb
 from Models.Transformer import TransformerNetwork
 from torchvision import transforms
 from Database.Mongo import PhilterDB
@@ -29,15 +33,16 @@ model_dict = {}
 for i in os.listdir("./SavedModels"):
     path = os.path.join(".", "SavedModels", i)
 
-    if device_name == "cpu":
-        checkpoint = torch.load(path, map_location=torch.device('cpu'))
-    else:
-        checkpoint = torch.load(path)
+    checkpoint = torch.load(path, map_location=device)
 
     model = TransformerNetwork().to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model_name = i.split(".model")[0]
     model_dict.update({model_name: model})
+
+checkpoint = torch.load("./BWModel/Restorer.model", map_location=device)
+bw_model = Unet(256, 64, 0.5, False).to(device)
+bw_model.load_state_dict(checkpoint["generator"])
 
 """
 DATABASE
@@ -85,6 +90,36 @@ def transform_image(image_bytes: bytes,
         return filtered
 
 
+def bw_to_color(image_bytes: bytes,
+                transformer: transforms.Compose,
+                generator: Unet):
+    with torch.no_grad():
+        generator.eval()
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img = transformer(img)
+        arr = np.array(img)
+
+        lab = color.rgb2lab(arr).astype("float32")
+        ten_lab = transforms.ToTensor()(lab)
+
+        L = ten_lab[0:1] / 50 - 1
+
+        L = torch.unsqueeze(L, dim=0).to(device)
+
+        fake_ab = generator(L)
+
+        fake_ab = torch.squeeze(fake_ab, dim=0)
+        L = torch.squeeze(L, dim=0)
+
+        img_rgb = lab_to_rgb(L, fake_ab)
+
+        img_rgb = np.clip(img_rgb, 0, 255)
+
+        im = Image.fromarray(img_rgb)
+
+    return im
+
+
 """
 Applies a filter to a specified image
 
@@ -129,6 +164,25 @@ def apply_filter():
     return send_file(img_io, mimetype='image/jpeg')
 
 
+@app.route('/bw-color', methods=["POST", "GET"])
+def convert_to_color():
+    transformer_list = [transforms.Resize((256, 256), transforms.InterpolationMode.BICUBIC),
+                        transforms.CenterCrop(256)]
+
+    file = request.files['file']
+    img_bytes = file.read()
+
+    im = bw_to_color(img_bytes,
+                     transforms.Compose(transformer_list),
+                     bw_model)
+
+    img_io = io.BytesIO()
+    im.save(img_io, "JPEG", quality=70)
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/jpeg')
+
+
 @app.route('/login', methods=["POST", "GET"])
 def login():
     email = request.form['email']
@@ -145,6 +199,7 @@ def save_image():
     title = request.form["title"].upper()
     description = request.form["description"]
     file = request.files["file"]
+    generated = bool(request.files["generated"])
 
     image_id = str(uuid.uuid4())
 
@@ -152,7 +207,8 @@ def save_image():
         image_id,
         title,
         file,
-        description=description)
+        description=description,
+        generated=generated)
 
     return jsonify({"imageId": image_id})
 
@@ -171,6 +227,54 @@ def save_image_cluster():
 
     return jsonify({"status": 200,
                     "inserted_id": str(inserted_id)})
+
+
+@app.route('/get-image-cluster', methods=["POST", "GET"])
+def get_image_cluster():
+    user_id = request.form["userId"]
+    limit = int(request.form["limit"])
+    ascend = True if request.form["ascending"].upper() == "TRUE" else False
+    page_num = int(request.form["pageNumber"])
+
+    pack_dict = {}
+
+    algo = request.form["algorithm"].upper()
+    if algo != "NONE":
+        pack_dict["algorithm"] = algo
+
+    tag = request.form["algorithm"].upper()
+    if tag != "NONE":
+        pack_dict["tag"] = tag
+
+    clusters = db.get_clusters(user_id,
+                               limit,
+                               ascend,
+                               page_num,
+                               **pack_dict)
+
+    tag_list = []
+    algo_list = []
+    gen_list = []
+    base_list = []
+
+    for cluster in clusters["clusters"]:
+        tag_list.append(cluster["tag"])
+        algo_list.append(cluster["algorithm"])
+
+        data, gen = db.cluster_to_image(cluster["imageList"])
+
+        gen_list.append(gen[0])
+        base_list.append(data)
+
+    data_dict = {
+        "tagList": tag_list,
+        "algoList": algo_list,
+        "genList": gen_list,
+        "baseList": base_list,
+        "nextPage": clusters["next_page"]
+    }
+
+    return jsonify(data_dict)
 
 
 if __name__ == "__main__":

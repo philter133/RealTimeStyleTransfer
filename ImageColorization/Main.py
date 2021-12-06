@@ -19,6 +19,7 @@ def bw_to_color(img_path: str,
                 transformer: transforms.Compose,
                 generator: Unet,
                 device: torch.device) -> None:
+
     with torch.no_grad():
         generator.eval()
         img = Image.open(img_path).convert("RGB")
@@ -37,12 +38,14 @@ def bw_to_color(img_path: str,
         fake_ab = torch.squeeze(fake_ab, dim=0)
         L = torch.squeeze(L, dim=0)
 
-        print(fake_ab.size())
-
         img_rgb = lab_to_rgb(L, fake_ab)
+
+        img_rgb = np.clip(img_rgb, 0, 255)
 
         im = Image.fromarray(img_rgb)
         im.show()
+
+        return im
 
 
 def compute_loss(preds: torch.Tensor,

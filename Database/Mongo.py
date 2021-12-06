@@ -1,5 +1,6 @@
 import ssl
 import time
+import uuid
 
 import requests
 import pymongo
@@ -51,7 +52,7 @@ class PhilterDB:
         api_key = config('api_key')
 
         payload = {"key": api_key,
-                   "name": title}
+                   "name": str(uuid.uuid4())}
 
         files = {"image": image_bytes}
 
@@ -100,12 +101,13 @@ class PhilterDB:
                      page_num=0,
                      **kwargs):
 
-        query = {"user_id": user_id}
+        query = {"userId": user_id}
 
         for i in kwargs.keys():
             query[i] = kwargs[i]
 
         sort_query = [("time", 1) if sort_ascending else ("time", -1)]
+        print(sort_query)
 
         cluster_list = self.__pagination(limit,
                                          "CLUSTER_TABLE",
@@ -114,10 +116,27 @@ class PhilterDB:
                                          page_num)
 
         cluster_data = {"clusters": cluster_list,
-                        "next_page": page_num + 1} if len(cluster_list) > 0 else {"pics": cluster_list,
+                        "next_page": page_num + 1} if len(cluster_list) > 0 else {"clusters": cluster_list,
                                                                                   "next_page": None}
 
         return cluster_data
 
-    def cluster_to_image(self):
-        pass
+    def cluster_to_image(self,
+                   id_list: list[str]):
+
+        data = list(self.__db["IMAGE_TABLE"].find({"_id": {"$in": id_list}}))
+
+        for idx, i in enumerate(data):
+            if i["generated"]:
+                break
+
+        generated_list = [data.pop(idx)]
+
+        return data, generated_list
+
+
+if __name__ == '__main__':
+    philter_db = PhilterDB()
+
+    print(philter_db.get_images(["188d17de-2acf-4585-bfb0-697cf1fcafb5", "d49dd553-5248-4f6c-a03e-de389d1e2b31",
+                                 "45e07592-a032-42b8-a193-872285b79de7"]))
