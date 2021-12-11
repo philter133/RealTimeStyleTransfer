@@ -12,6 +12,8 @@ from Models.Transformer import TransformerNetwork
 from torchvision import transforms
 from Database.Mongo import PhilterDB
 from PIL import Image
+from NSTMain import NeuralStyleTransfer
+from VGG import VGGModel
 import torch
 import os
 import io
@@ -199,7 +201,7 @@ def save_image():
     title = request.form["title"].upper()
     description = request.form["description"]
     file = request.files["file"]
-    generated = bool(request.files["generated"])
+    generated = True if request.files["generated"].upper() == "TRUE" else False
 
     image_id = str(uuid.uuid4())
 
@@ -211,6 +213,14 @@ def save_image():
         generated=generated)
 
     return jsonify({"imageId": image_id})
+
+
+@app.route('/style-image', methods=["POST", "GET"])
+def style_image():
+    content_file = request.files['contentImage']
+    style_file = request.files['styleImage']
+    content_bytes = content_file.read()
+    style_bytes = style_file.read()
 
 
 @app.route('/save-cluster', methods=["POST", "GET"])
