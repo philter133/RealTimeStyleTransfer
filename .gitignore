@@ -14,3 +14,4 @@ SavedPics
 __pycache__/
 env
 BWModel
+.DS_Store
