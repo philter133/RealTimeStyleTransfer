@@ -1,13 +1,14 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import typing
 
 
 class VGGModel(nn.Module):
 
     def __init__(self,
-                 style_conv: list[tuple[int, int]],
-                 content_conv: list[tuple[int, int]],
+                 style_conv: typing.List[typing.Tuple[int, int]],
+                 content_conv: typing.List[typing.Tuple[int, int]],
                  device: torch.device,
                  avg_pool=False):
 
@@ -68,7 +69,8 @@ class VGGModel(nn.Module):
                 break
 
     def forward(self,
-                x: torch.Tensor) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+                x: torch.Tensor) -> typing.Tuple[typing.List[torch.Tensor],
+                                                 typing.List[torch.Tensor]]:
 
         style_list = []
         content_list = []

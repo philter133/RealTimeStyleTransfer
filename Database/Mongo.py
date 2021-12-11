@@ -1,7 +1,7 @@
 import ssl
 import time
 import uuid
-
+import typing
 import requests
 import pymongo
 
@@ -20,8 +20,8 @@ class PhilterDB:
     def __pagination(self,
                      limit: int,
                      table: str,
-                     find_query: dict,
-                     sort_query: list,
+                     find_query: typing.Dict,
+                     sort_query: typing.List,
                      page_num):
 
         skips = limit * page_num
@@ -80,7 +80,7 @@ class PhilterDB:
 
     def save_cluster(self,
                      user_id: str,
-                     image_list: list,
+                     image_list: typing.List,
                      algorithm: str,
                      tag: str):
 
@@ -122,7 +122,7 @@ class PhilterDB:
         return cluster_data
 
     def cluster_to_image(self,
-                   id_list: list[str]):
+                   id_list: typing.List[str]):
 
         data = list(self.__db["IMAGE_TABLE"].find({"_id": {"$in": id_list}}))
 

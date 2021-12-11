@@ -1,5 +1,5 @@
 import io
-
+import typing
 import torch.nn.functional as F
 import numpy as np
 import torch
@@ -11,7 +11,7 @@ from VGG import VGGModel
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def load_image(img: Union[bytes, str],
+def load_image(img: typing.Union[bytes, str],
                size: int):
     transformer_list = [transforms.Resize((size, size), transforms.InterpolationMode.BICUBIC),
                         transforms.CenterCrop(size),
@@ -41,8 +41,8 @@ def show_image(img: torch.Tensor):
     return im
 
 
-def get_loss(ground_truth: list[torch.Tensor],
-             layer_list: list[torch.Tensor],
+def get_loss(ground_truth: typing.List[torch.Tensor],
+             layer_list: typing.List[torch.Tensor],
              weights: torch.Tensor) -> torch.Tensor:
     loss = F.mse_loss(ground_truth[0], layer_list[0])
 
@@ -95,7 +95,7 @@ class NeuralStyleTransfer:
                  layer_set: str,
                  avg_pool: bool,
                  content_input: bool,
-                 layer_weights: list[float],
+                 layer_weights: typing.List[float],
                  content_weight: float,
                  style_weight: float,
                  lr=1e1):
