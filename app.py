@@ -219,8 +219,40 @@ def save_image():
 def style_image():
     content_file = request.files['contentImage']
     style_file = request.files['styleImage']
+    image_size = int(request.form['imageSize'])
+    layer_set = request.form['layerSet']
+    content_input = True if request.form['contentInput'].upper() == "TRUE" else False
+    style_weight = float(request.form["styleWeight"])
+    content_weight = float(request.form["contentWeight"])
+
+    epochs = request.form["epochs"]
+
     content_bytes = content_file.read()
     style_bytes = style_file.read()
+
+    nst = NeuralStyleTransfer(style_bytes,
+                              content_bytes,
+                              image_size,
+                              layer_set,
+                              True,
+                              content_input,
+                              [1, 1, 1, 1, 1],
+                              content_weight,
+                              style_weight,
+                              0.01)
+
+    for i in range(int(epochs)):
+        nst.train_one_adam(100)
+
+    im = nst.get_image()
+
+    img_io = io.BytesIO()
+    im.save(img_io, "JPEG", quality=70)
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/jpeg')
+
+
 
 
 @app.route('/save-cluster', methods=["POST", "GET"])

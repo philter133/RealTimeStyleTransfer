@@ -171,12 +171,21 @@ class NeuralStyleTransfer:
 
             self.__optimizer.step()
 
-            print(full_loss)
+            return full_loss
+
+        # with torch.no_grad():
+        #     # temp = torch.clamp(self.__input, 0, 1)
+        #     temp = denormalize_images(self.__input, self.__mean, self.__std)
+        #     show_image(temp)
+
+    def get_image(self):
 
         with torch.no_grad():
             # temp = torch.clamp(self.__input, 0, 1)
             temp = denormalize_images(self.__input, self.__mean, self.__std)
             show_image(temp)
+            return show_image(temp)
+
 
 
 if __name__ == '__main__':
