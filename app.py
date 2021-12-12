@@ -168,7 +168,7 @@ def apply_filter():
 
     image.save(img_byte_arr, format='JPEG')
 
-    inserted_id, url = db.save_image(image_id,
+    inserted_id, gen = db.save_image(image_id,
                                      title,
                                      img_byte_arr.getvalue(),
                                      description=description,
@@ -184,7 +184,7 @@ def apply_filter():
     img.save(img_byte_arr, format='JPEG')
     img_io.seek(0)
 
-    inserted_id, url = db.save_image(image_id,
+    inserted_id, _ = db.save_image(image_id,
                                      "Content Image",
                                      img_byte_arr.getvalue(),
                                      description="The image the style was applied on",
@@ -193,7 +193,7 @@ def apply_filter():
     image_id_list.append(inserted_id)
 
     return jsonify({"imageId": image_id_list,
-                    "displayUrl": url})
+                    "displayUrl": gen})
 
 
 @app.route('/bw-color', methods=["POST", "GET"])
