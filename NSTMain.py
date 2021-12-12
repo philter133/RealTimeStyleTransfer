@@ -37,7 +37,7 @@ def show_image(img: torch.Tensor):
     arr = (arr * 255).astype(np.uint8)
     arr = np.transpose(arr, (1, 2, 0))
     im = Image.fromarray(arr)
-    im.show()
+    # im.show()
     return im
 
 
@@ -170,8 +170,9 @@ class NeuralStyleTransfer:
             full_loss.backward()
 
             self.__optimizer.step()
+            # print(full_loss)
 
-            return full_loss
+        # return full_loss
 
         # with torch.no_grad():
         #     # temp = torch.clamp(self.__input, 0, 1)
@@ -189,7 +190,7 @@ class NeuralStyleTransfer:
 
 
 if __name__ == '__main__':
-    nst = NeuralStyleTransfer("D:/Postman/women.jpeg",
+    nst = NeuralStyleTransfer("D:/Postman/mosaic.jpg",
                               "D:/Postman/me.jpg",
                               500,
                               "e",

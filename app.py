@@ -201,7 +201,7 @@ def save_image():
     title = request.form["title"].upper()
     description = request.form["description"]
     file = request.files["file"]
-    generated = True if request.files["generated"].upper() == "TRUE" else False
+    generated = True if request.form["generated"].upper() == "TRUE" else False
 
     image_id = str(uuid.uuid4())
 
@@ -241,6 +241,7 @@ def style_image():
                               style_weight,
                               0.01)
 
+
     for i in range(int(epochs)):
         nst.train_one_adam(100)
 
@@ -251,8 +252,6 @@ def style_image():
     img_io.seek(0)
 
     return send_file(img_io, mimetype='image/jpeg')
-
-
 
 
 @app.route('/save-cluster', methods=["POST", "GET"])
@@ -320,4 +319,4 @@ def get_image_cluster():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=False, port=os.environ.get('PORT', 80))
+    app.run(host='0.0.0.0', debug=True, port=os.environ.get('PORT', 80))
