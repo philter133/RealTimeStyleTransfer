@@ -281,38 +281,88 @@ def save_image():
 def style_image():
     content_file = request.files['contentImage']
     style_file = request.files['styleImage']
+
     image_size = int(request.form['imageSize'])
     layer_set = request.form['layerSet']
-    content_input = True if request.form['contentInput'].upper() == "TRUE" else False
     style_weight = float(request.form["styleWeight"])
     content_weight = float(request.form["contentWeight"])
 
     epochs = request.form["epochs"]
+    title = request.form["title"]
+    description = request.form["description"]
 
     content_bytes = content_file.read()
     style_bytes = style_file.read()
+
+    image_id_list = []
 
     nst = NeuralStyleTransfer(style_bytes,
                               content_bytes,
                               image_size,
                               layer_set,
                               True,
-                              content_input,
+                              True,
                               [1, 1, 1, 1, 1],
                               content_weight,
                               style_weight,
                               0.01)
 
-    for i in range(int(epochs)):
+    for z in range(int(epochs)):
+        print(z)
         nst.train_one_adam(100)
 
     im = nst.get_image()
 
     img_io = io.BytesIO()
     im.save(img_io, "JPEG", quality=70)
+
+    image_id = str(uuid.uuid4())
+    inserted_id, gen = db.save_image(image_id,
+                                     title,
+                                     img_io.getvalue(),
+                                     description=description,
+                                     generated=True)
+
+    image_id_list.append(inserted_id)
+
+    image_id = str(uuid.uuid4())
+    content_file.stream.seek(0)
+    img_bytes = content_file.read()
+    img_io = io.BytesIO(img_bytes)
+    img = Image.open(img_io)
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='JPEG')
     img_io.seek(0)
 
-    return send_file(img_io, mimetype='image/jpeg')
+    inserted_id, _ = db.save_image(image_id,
+                                   "Content Image",
+                                   img_byte_arr.getvalue(),
+                                   description="The image the style was applied on",
+                                   generated=False)
+
+    image_id_list.append(inserted_id)
+
+    image_id = str(uuid.uuid4())
+    style_file.stream.seek(0)
+    img_bytes = style_file.read()
+    img_io = io.BytesIO(img_bytes)
+    img = Image.open(img_io)
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='JPEG')
+    img_io.seek(0)
+
+    inserted_id, _ = db.save_image(image_id,
+                                   "Style Image",
+                                   img_byte_arr.getvalue(),
+                                   description="The style applied on the content",
+                                   generated=False)
+
+    image_id_list.append(inserted_id)
+
+    return jsonify({"genId": image_id_list[0],
+                    "contentId": image_id_list[1],
+                    "styleId": image_id_list[2],
+                    "displayUrl": gen})
 
 
 @app.route('/save-cluster', methods=["POST", "GET"])
