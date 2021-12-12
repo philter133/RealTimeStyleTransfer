@@ -192,7 +192,8 @@ def apply_filter():
 
     image_id_list.append(inserted_id)
 
-    return jsonify({"imageId": image_id_list,
+    return jsonify({"genId": image_id_list[0],
+                    "contentId": image_id_list[1],
                     "displayUrl": gen})
 
 
