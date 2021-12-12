@@ -1,3 +1,4 @@
+import copy
 import uuid
 
 import numpy as np
@@ -146,6 +147,8 @@ def apply_filter():
     title = request.form['title']
     description = request.form['description']
 
+    image_id_list = []
+
     size_dict = {"micro": 500,
                  "small": 750,
                  "medium": 1000,
@@ -170,8 +173,26 @@ def apply_filter():
                                      img_byte_arr.getvalue(),
                                      description=description,
                                      generated=True)
+    image_id_list.append(inserted_id)
 
-    return jsonify({"imageId": image_id,
+    image_id = str(uuid.uuid4())
+    file.stream.seek(0)
+    img_bytes = file.read()
+    img_io = io.BytesIO(img_bytes)
+    img = Image.open(img_io)
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='JPEG')
+    img_io.seek(0)
+
+    inserted_id, url = db.save_image(image_id,
+                                     "Content Image",
+                                     img_byte_arr.getvalue(),
+                                     description="The image the style was applied on",
+                                     generated=False)
+
+    image_id_list.append(inserted_id)
+
+    return jsonify({"imageId": image_id_list,
                     "displayUrl": url})
 
 
@@ -274,7 +295,7 @@ def save_image_cluster():
                                   tag)
 
     return jsonify({"status": 200,
-                    "inserted_id": str(inserted_id)})
+                    "idArray": str(inserted_id)})
 
 
 @app.route('/get-image-cluster', methods=["POST", "GET"])
