@@ -74,7 +74,7 @@ class PhilterDB:
 
             doc = self.__db["IMAGE_TABLE"].insert_one(image_dict)
 
-            return doc.inserted_id
+            return doc.inserted_id, response.json()["data"]["image"]["url"]
         else:
             return None
 

@@ -143,8 +143,8 @@ def apply_filter():
     file = request.files['file']
     name = request.form['name']
     size = request.form['size']
-
-    img_bytes = file.read()
+    title = request.form['title']
+    description = request.form['description']
 
     size_dict = {"micro": 500,
                  "small": 750,
@@ -155,15 +155,24 @@ def apply_filter():
     if size.lower() not in list(size_dict.keys()):
         flask.abort(500)
 
+    image_id = str(uuid.uuid4())
+    img_bytes = file.read()
     image = transform_image(img_bytes,
                             model_dict[name],
                             size_dict[size])
 
-    img_io = io.BytesIO()
-    image.save(img_io, "JPEG", quality=70)
-    img_io.seek(0)
+    img_byte_arr = io.BytesIO()
 
-    return send_file(img_io, mimetype='image/jpeg')
+    image.save(img_byte_arr, format='JPEG')
+
+    inserted_id, url = db.save_image(image_id,
+                                     title,
+                                     img_byte_arr.getvalue(),
+                                     description=description,
+                                     generated=True)
+
+    return jsonify({"imageId": image_id,
+                    "displayUrl": url})
 
 
 @app.route('/bw-color', methods=["POST", "GET"])
@@ -205,14 +214,11 @@ def save_image():
 
     image_id = str(uuid.uuid4())
 
-    x = db.save_image(
-        image_id,
-        title,
-        file,
-        description=description,
-        generated=generated)
-
-    print(x)
+    db.save_image(image_id,
+                  title,
+                  file,
+                  description=description,
+                  generated=generated)
 
     return jsonify({"imageId": image_id})
 
@@ -242,7 +248,6 @@ def style_image():
                               content_weight,
                               style_weight,
                               0.01)
-
 
     for i in range(int(epochs)):
         nst.train_one_adam(100)
