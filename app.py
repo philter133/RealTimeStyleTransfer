@@ -205,12 +205,14 @@ def save_image():
 
     image_id = str(uuid.uuid4())
 
-    db.save_image(
+    x = db.save_image(
         image_id,
         title,
         file,
         description=description,
         generated=generated)
+
+    print(x)
 
     return jsonify({"imageId": image_id})
 
