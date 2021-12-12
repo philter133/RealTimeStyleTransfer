@@ -394,7 +394,7 @@ def get_image_cluster():
     if algo != "NONE":
         pack_dict["algorithm"] = algo
 
-    tag = request.form["algorithm"].upper()
+    tag = request.form["tag"].upper()
     if tag != "NONE":
         pack_dict["tag"] = tag
 

@@ -26,6 +26,8 @@ class PhilterDB:
 
         skips = limit * page_num
 
+        print(find_query)
+
         cursor = self.__db[table].find(find_query).sort(sort_query).skip(skips).limit(limit)
 
         return [x for x in cursor]
@@ -105,6 +107,8 @@ class PhilterDB:
 
         for i in kwargs.keys():
             query[i] = kwargs[i]
+
+        print(query)
 
         sort_query = [("time", 1) if sort_ascending else ("time", -1)]
         print(sort_query)
