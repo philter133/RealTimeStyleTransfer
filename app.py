@@ -185,10 +185,10 @@ def apply_filter():
     img_io.seek(0)
 
     inserted_id, _ = db.save_image(image_id,
-                                     "Content Image",
-                                     img_byte_arr.getvalue(),
-                                     description="The image the style was applied on",
-                                     generated=False)
+                                   "Content Image",
+                                   img_byte_arr.getvalue(),
+                                   description="The image the style was applied on",
+                                   generated=False)
 
     image_id_list.append(inserted_id)
 
@@ -203,6 +203,11 @@ def convert_to_color():
                         transforms.CenterCrop(256)]
 
     file = request.files['file']
+    title = request.form['title']
+    description = request.form['description']
+
+    image_id_list = []
+
     img_bytes = file.read()
 
     im = bw_to_color(img_bytes,
@@ -211,9 +216,36 @@ def convert_to_color():
 
     img_io = io.BytesIO()
     im.save(img_io, "JPEG", quality=70)
+
+    image_id = str(uuid.uuid4())
+    inserted_id, gen = db.save_image(image_id,
+                                     title,
+                                     img_io.getvalue(),
+                                     description=description,
+                                     generated=True)
+
+    image_id_list.append(inserted_id)
+
+    image_id = str(uuid.uuid4())
+    file.stream.seek(0)
+    img_bytes = file.read()
+    img_io = io.BytesIO(img_bytes)
+    img = Image.open(img_io)
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='JPEG')
     img_io.seek(0)
 
-    return send_file(img_io, mimetype='image/jpeg')
+    inserted_id, _ = db.save_image(image_id,
+                                   "Content Image",
+                                   img_byte_arr.getvalue(),
+                                   description="The image the style was applied on",
+                                   generated=False)
+
+    image_id_list.append(inserted_id)
+
+    return jsonify({"genId": image_id_list[0],
+                    "contentId": image_id_list[1],
+                    "displayUrl": gen})
 
 
 @app.route('/login', methods=["POST", "GET"])
