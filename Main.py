@@ -2,38 +2,12 @@ import torch
 from tqdm import tqdm
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader
-from Utils.utilities import view_image, load_image, compute_gram
+from utilities import display_image, load_image, compute_gram, get_transformer_list, transform_image
 from Models.VGG import VGG16
 from Models.Transformer import TransformerNetwork
 
 # Set Random Seed
 torch.manual_seed(108)
-
-
-class StyleTransfer:
-
-    def __init__(self,
-                 state_dict_path: str):
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.__device = torch.device(device=device)
-
-        checkpoint = torch.load(state_dict_path)
-        self.__model = TransformerNetwork().to(self.__device)
-        self.__model.load_state_dict(checkpoint["model_state_dict"])
-
-    def transform_image(self, content_image_path):
-        with torch.no_grad():
-            self.__model.eval()
-
-            style_tf = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])])
-
-            content_image = load_image(content_image_path)
-            content_tensor = torch.unsqueeze(style_tf(content_image), dim=0).to(self.__device)
-
-            view_image(torch.squeeze(self.__model(content_tensor), dim=0).cpu())
 
 
 class RealTimeStyleTransfer:
@@ -45,7 +19,15 @@ class RealTimeStyleTransfer:
                  content_weight: float,
                  tvr_weight: float,
                  style_image_path: str,
-                 train_data_path: str):
+                 train_data_path: str,
+                 content_loss_fn: torch.nn.MSELoss,
+                 style_loss_fn: torch.nn.MSELoss,
+                 normalize: bool,
+                 range_255: bool):
+
+        self.__normalize = normalize
+        self.__range_255 = range_255
+
         # Set training device
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.__device = torch.device(device=device)
@@ -62,15 +44,15 @@ class RealTimeStyleTransfer:
         self.__transformer = TransformerNetwork().to(self.__device)
 
         # Image_Transformers
-        image_tf = transforms.Compose([transforms.Resize(256),
-                                       transforms.CenterCrop(256),
-                                       transforms.ToTensor(),
-                                       transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                            std=[0.229, 0.224, 0.225])])
+        image_tf = transforms.Compose(get_transformer_list(normalize, range_255))
 
         style_tf = transforms.Compose([transforms.ToTensor(),
                                        transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                             std=[0.229, 0.224, 0.225])])
+
+        self.__normalizer_tf = transforms.Compose([transforms.Lambda(lambda x: x / 255),
+                                                   transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                        std=[0.229, 0.224, 0.225])])
 
         train_ds = datasets.ImageFolder(train_data_path,
                                         image_tf)
@@ -92,7 +74,8 @@ class RealTimeStyleTransfer:
         for key in list(layer_dict.keys()):
             self.__style_gram[key] = compute_gram(layer_dict[key])
 
-        self.__loss_fn = torch.nn.MSELoss().to(self.__device)
+        self.__loss_fn_content = content_loss_fn.to(self.__device)
+        self.__loss_fn_style = style_loss_fn.to(self.__device)
 
         self.__optim = torch.optim.Adam(self.__transformer.parameters(),
                                         self.__lr)
@@ -106,17 +89,14 @@ class RealTimeStyleTransfer:
     def transform_image(self, content_image_path):
         self.__transformer.eval()
 
-        style_tf = transforms.Compose([transforms.Resize(256),
-                                       transforms.CenterCrop(256),
-                                       transforms.ToTensor(),
-                                       transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                            std=[0.229, 0.224, 0.225])])
+        tf = transforms.Compose(get_transformer_list(self.__normalize, self.__range_255)[2:])
 
         content_image = load_image(content_image_path)
-        content_tensor = torch.unsqueeze(style_tf(content_image), dim=0).to(self.__device)
+        content_tensor = torch.unsqueeze(tf(content_image), dim=0).to(self.__device)
 
-        view_image(torch.squeeze(self.__transformer(content_tensor), dim=0).cpu())
-        # view_image(torch.squeeze(content_tensor, dim=0).cpu())
+        display_image(torch.squeeze(self.__transformer(content_tensor), dim=0).cpu(),
+                      range_255=self.__range_255,
+                      normalize=self.__normalize)
 
     def train_model_one_epoch(self):
 
@@ -142,11 +122,16 @@ class RealTimeStyleTransfer:
             # Calculate Content Loss
 
             y_hat = self.__transformer(y)
-            fi_y_hat = self.__vgg(y_hat)
-            fi_y = self.__vgg(y)
 
-            content_loss = self.__lambda_c * self.__loss_fn(fi_y_hat["relu2_2"],
-                                                            fi_y["relu2_2"])
+            if self.__range_255 and not self.__normalize:
+                fi_y_hat = self.__vgg(self.__normalizer_tf(y_hat))
+                fi_y = self.__vgg(self.__normalizer_tf(y))
+            else:
+                fi_y_hat = self.__vgg(y_hat)
+                fi_y = self.__vgg(y)
+
+            content_loss = self.__lambda_c * self.__loss_fn_content(fi_y_hat["relu2_2"],
+                                                                    fi_y["relu2_2"])
             feature_loss_list.append(content_loss)
 
             # Calculate Style Loss
@@ -154,8 +139,8 @@ class RealTimeStyleTransfer:
             style_loss = 0.0
 
             for key in list(fi_y_hat.keys()):
-                style_loss += self.__loss_fn(compute_gram(fi_y_hat[key]),
-                                             self.__style_gram[key][:batch_size])
+                style_loss += self.__loss_fn_style(compute_gram(fi_y_hat[key]),
+                                                   self.__style_gram[key][:batch_size])
 
             style_loss *= self.__lambda_s
 
@@ -177,26 +162,34 @@ class RealTimeStyleTransfer:
             self.__optim.step()
 
             if count % 1000 == 0:
-                self.transform_image("./Data/ContentTestImages/test1.jpg")
+                self.transform_image("./Data/ContentTestImages/karya.jpg")
                 self.__transformer.train()
 
 
 if __name__ == '__main__':
-    style_transfer = RealTimeStyleTransfer(4,
-                                           1e-3,
-                                           1e10,
-                                           1e5,
-                                           1e-7,
-                                           "./Data/Style/mosaic.jpg",
-                                           "./Data/Coco/2014/Train")
+    # style_transfer = RealTimeStyleTransfer(4,
+    #                                        1e-3,
+    #                                        1e10,
+    #                                        1e5,
+    #                                        0,
+    #                                        "./Data/Style/mosaic.jpg",
+    #                                        "./Data/Coco/2014/Train",
+    #                                        torch.nn.MSELoss(),
+    #                                        torch.nn.MSELoss(),
+    #                                        False,
+    #                                        True)
+    #
+    # epochs = 2
+    #
+    # for epoc in range(epochs):
+    #     style_transfer.train_model_one_epoch()
+    #
+    # style_transfer.transform_image("./Data/ContentTestImages/test1.jpg")
+    # style_transfer.save_model("./SavedModels/mosaic.model")
 
-    epochs = 2
-
-    for epoc in range(epochs):
-        style_transfer.train_model_one_epoch()
-
-    style_transfer.transform_image("./Data/ContentTestImages/test1.jpg")
-    style_transfer.save_model("./SavedModels/Mosaic.model")
-
-    # style_transfer = StyleTransfer("./SavedModels/Mosaic.model")
-    # style_transfer.transform_image("./Data/ContentTestImages/test2.jpeg")
+    style_transfer = transform_image("./SavedModels/starrynight.model",
+                                     "./Data/ContentTestImages/castle.jpg",
+                                     save_path="D:/RealTimeStyleTransfer/SavedPics/scene.jpg",
+                                     save=True,
+                                     normalize=False,
+                                     range_255=True)
