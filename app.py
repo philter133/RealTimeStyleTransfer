@@ -22,6 +22,8 @@ import PIL
 import flask
 import flask_pymongo
 
+from bson.objectid import ObjectId
+
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -408,10 +410,12 @@ def get_image_cluster():
     algo_list = []
     gen_list = []
     base_list = []
+    id_list = []
 
     for cluster in clusters["clusters"]:
         tag_list.append(cluster["tag"])
         algo_list.append(cluster["algorithm"])
+        id_list.append(str(cluster['_id']))
 
         data, gen = db.cluster_to_image(cluster["imageList"])
 
@@ -423,10 +427,23 @@ def get_image_cluster():
         "algoList": algo_list,
         "genList": gen_list,
         "baseList": base_list,
-        "nextPage": clusters["next_page"]
+        "nextPage": clusters["next_page"],
+        "id": id_list
     }
 
     return jsonify(data_dict)
+
+
+@app.route('/delete-cluster', methods=["POST", "GET", "DELETE"])
+def delete_image_cluster():
+    cluster_id = request.form["clusterId"]
+
+    print(cluster_id)
+
+    delete_count = db.delete_cluster("CLUSTER_TABLE",
+                                     ObjectId(cluster_id))
+
+    return jsonify({"deleted": delete_count})
 
 
 if __name__ == "__main__":

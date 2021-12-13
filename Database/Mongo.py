@@ -126,7 +126,7 @@ class PhilterDB:
         return cluster_data
 
     def cluster_to_image(self,
-                   id_list: typing.List[str]):
+                         id_list: typing.List[str]):
 
         data = list(self.__db["IMAGE_TABLE"].find({"_id": {"$in": id_list}}))
 
@@ -137,6 +137,14 @@ class PhilterDB:
         generated_list = [data.pop(idx)]
 
         return data, generated_list
+
+    def delete_cluster(self,
+                       table: str,
+                       doc_id: str):
+
+        value = self.__db[table].delete_one({"_id": doc_id})
+
+        return value.deleted_count
 
 
 if __name__ == '__main__':
