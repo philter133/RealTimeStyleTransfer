@@ -289,6 +289,8 @@ def style_image():
     style_weight = float(request.form["styleWeight"])
     content_weight = float(request.form["contentWeight"])
 
+    print(layer_set)
+
     epochs = request.form["epochs"]
     title = request.form["title"]
     description = request.form["description"]
@@ -301,7 +303,7 @@ def style_image():
     nst = NeuralStyleTransfer(style_bytes,
                               content_bytes,
                               image_size,
-                              layer_set,
+                              "e",
                               True,
                               True,
                               [1, 1, 1, 1, 1],
@@ -437,8 +439,6 @@ def get_image_cluster():
 @app.route('/delete-cluster', methods=["POST", "GET", "DELETE"])
 def delete_image_cluster():
     cluster_id = request.form["clusterId"]
-
-    print(cluster_id)
 
     delete_count = db.delete_cluster("CLUSTER_TABLE",
                                      ObjectId(cluster_id))

@@ -170,7 +170,7 @@ class NeuralStyleTransfer:
             full_loss.backward()
 
             self.__optimizer.step()
-            # print(full_loss)
+            print(full_loss)
 
         # return full_loss
 
