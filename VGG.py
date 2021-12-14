@@ -4,6 +4,7 @@ import torchvision.models as models
 import typing
 
 
+# The VGG network model for losses
 class VGGModel(nn.Module):
 
     def __init__(self,

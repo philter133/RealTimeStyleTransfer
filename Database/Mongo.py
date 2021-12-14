@@ -17,6 +17,7 @@ class PhilterDB:
 
         self.__db = client["PHILTER_DB"]
 
+    # Paginates the data to save on memory
     def __pagination(self,
                      limit: int,
                      table: str,
@@ -26,12 +27,11 @@ class PhilterDB:
 
         skips = limit * page_num
 
-        print(find_query)
-
         cursor = self.__db[table].find(find_query).sort(sort_query).skip(skips).limit(limit)
 
         return [x for x in cursor]
 
+    # Logs in the user, if they are registered, otherwise registers them
     def login_user(self,
                    email: str,
                    name: str):
@@ -44,6 +44,7 @@ class PhilterDB:
                                                     upsert=True)
         return result.matched_count
 
+    # Saves a image to the database
     def save_image(self,
                    id: str,
                    title: str,
@@ -80,6 +81,7 @@ class PhilterDB:
         else:
             return None
 
+    # Saves a cluster of images to the database that belong to a specific user
     def save_cluster(self,
                      user_id: str,
                      image_list: typing.List,
@@ -96,6 +98,7 @@ class PhilterDB:
 
         return self.__db["CLUSTER_TABLE"].insert_one(cluster_dict).inserted_id
 
+    # Gets a cluster for a user
     def get_clusters(self,
                      user_id,
                      limit,
@@ -125,6 +128,7 @@ class PhilterDB:
 
         return cluster_data
 
+    # Converts a cluster full of image id's to image url's
     def cluster_to_image(self,
                          id_list: typing.List[str]):
 
@@ -138,6 +142,7 @@ class PhilterDB:
 
         return data, generated_list
 
+    # Delete's a cluster for a user
     def delete_cluster(self,
                        table: str,
                        doc_id: str):
@@ -145,10 +150,3 @@ class PhilterDB:
         value = self.__db[table].delete_one({"_id": doc_id})
 
         return value.deleted_count
-
-
-if __name__ == '__main__':
-    philter_db = PhilterDB()
-
-    print(philter_db.get_images(["188d17de-2acf-4585-bfb0-697cf1fcafb5", "d49dd553-5248-4f6c-a03e-de389d1e2b31",
-                                 "45e07592-a032-42b8-a193-872285b79de7"]))

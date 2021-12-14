@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+# A deconvoloutional block in the model architecture
 
 class Deconvolution(nn.Module):
 

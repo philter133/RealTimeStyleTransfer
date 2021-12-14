@@ -15,11 +15,11 @@ import torch.utils.data as data
 torch.autograd.set_detect_anomaly(True)
 
 
+# turn bw to color
 def bw_to_color(img_path: str,
                 transformer: transforms.Compose,
                 generator: Unet,
                 device: torch.device) -> None:
-
     with torch.no_grad():
         generator.eval()
         img = Image.open(img_path).convert("RGB")
@@ -48,6 +48,7 @@ def bw_to_color(img_path: str,
         return im
 
 
+# computes loss
 def compute_loss(preds: torch.Tensor,
                  loss_fn: nn.BCEWithLogitsLoss,
                  fake: bool,
@@ -61,6 +62,7 @@ def compute_loss(preds: torch.Tensor,
     return loss_fn(preds, label_tensor)
 
 
+# pre initializes weights
 def initialize_weights(layer: torch.nn.Module,
                        gain=0.02):
     classname = layer.__class__.__name__
@@ -77,12 +79,14 @@ def initialize_weights(layer: torch.nn.Module,
         nn.init.constant_(layer.bias.data, 0.)
 
 
+# turn gradients on and off
 def switch_gradients(model: nn.Module,
                      off_grads: bool):
     for param in model.parameters():
         param.requires_grad = off_grads
 
 
+# optimizes the discriminator
 def optimize_discriminator(fake_ab: torch.Tensor,
                            real_ab: torch.Tensor,
                            L: torch.Tensor,
@@ -110,6 +114,7 @@ def optimize_discriminator(fake_ab: torch.Tensor,
     return full_loss
 
 
+# optimizes the generator
 def optimize_generator(fake_ab: torch.Tensor,
                        real_ab: torch.Tensor,
                        L: torch.Tensor,
@@ -179,6 +184,7 @@ class TrainModel:
             self.__optim_disc.load_state_dict(checkpoint["optimizer_disc"])
             self.__optim_gen.load_state_dict(checkpoint["optimizer_gen"])
 
+    # Train for one epoch
     def train_one_epoch(self,
                         epoch: int):
         self.__discriminator.train()
@@ -232,12 +238,7 @@ class TrainModel:
 
             count += 1
 
-        form_str = "Train - Epoch {}: Gen loss {}. Disc Loss {}".format(epoch,
-                                                                        torch.mean(gen_loss_list),
-                                                                        torch.mean(disc_loss_list))
-
-        print(form_str)
-
+    # test for one epoch
     def test_one_epoch(self,
                        epoch):
 
@@ -261,10 +262,7 @@ class TrainModel:
 
                 count += 1
 
-        form_str = "Test - Epoch {}: Gen loss {}.".format(epoch,
-                                                          torch.mean(gen_loss_list))
-        print(form_str)
-
+    # validate one epoch
     def validate_model(self):
 
         gen_loss_list = torch.zeros(size=(1, len(self.__val)),
@@ -285,9 +283,6 @@ class TrainModel:
                 gen_loss_list[:, count] += l1_loss
 
                 count += 1
-
-        form_str = "Val - Model: Gen loss {}.".format(torch.mean(gen_loss_list))
-        print(form_str)
 
     def get_generator(self) -> Unet:
         return self.__generator
@@ -360,21 +355,3 @@ if __name__ == '__main__':
                 transforms.Compose(transformer_list[:-2]),
                 gen,
                 device=trainer.get_device())
-
-    # for epoch in range(EPOCHS):
-    #     trainer.train_one_epoch(epoch)
-    #     print()
-    #
-    #     if epoch != 0 and epoch % 10 == 0:
-    #         trainer.test_one_epoch(epoch)
-    #
-    #     trainer.save_generator("./SavedModels/Restorer.model",
-    #                            epoch)
-    #
-    #     gen = trainer.get_generator()
-    #     bw_to_color(bw_file_path,
-    #                 transforms.Compose(transformer_list[:-2]),
-    #                 gen,
-    #                 device=trainer.get_device())
-    #
-    # trainer.validate_model()

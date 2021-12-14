@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 np.random.seed(108)
 
-
+# lab format to rgb
 def lab_to_rgb(L: torch.Tensor,
                ab: torch.Tensor) -> np.ndarray:
     L = (L + 1.) * 50.
@@ -23,7 +23,7 @@ def lab_to_rgb(L: torch.Tensor,
 
     return (img_rgb * 255).astype(np.uint8)
 
-
+# dataloader
 class ColorizationDataset(Dataset):
 
     def __init__(self,

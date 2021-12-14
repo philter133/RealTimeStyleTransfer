@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+# A Residual Block block in the model architecture
 
 class ResidualBlock(nn.Module):
 

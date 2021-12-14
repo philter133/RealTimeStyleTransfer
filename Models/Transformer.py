@@ -5,6 +5,7 @@ from Models.ResBlock import ResidualBlock
 from Models.Deconv import Deconvolution
 
 
+# The full network with all the block in place
 class TransformerNetwork(nn.Module):
 
     def __init__(self):
@@ -28,7 +29,6 @@ class TransformerNetwork(nn.Module):
         # self.__activation_tanh = nn.Tanh()
 
     def forward(self, input_tensor) -> torch.Tensor:
-
         output_tensor = self.__conv_1(input_tensor)
         output_tensor = self.__conv_2(output_tensor)
         output_tensor = self.__conv_3(output_tensor)
@@ -47,5 +47,3 @@ class TransformerNetwork(nn.Module):
         # return self.__activation_tanh(output_tensor)
 
         return output_tensor
-
-

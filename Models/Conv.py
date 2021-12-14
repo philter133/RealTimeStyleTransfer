@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-
+# A convoloutional block in the model architecture
 class Convolution(nn.Module):
 
     def __init__(self,

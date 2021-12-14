@@ -25,6 +25,7 @@ def get_transformer_list(normalize: bool,
     return transformation_list
 
 
+# trnasforms images for being fed into the model
 def transform_image(state_dict_path: str,
                     content_image_path,
                     save_path=None,
