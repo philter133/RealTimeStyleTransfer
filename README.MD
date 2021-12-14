@@ -7,8 +7,12 @@ For the backend source code click this link [github.com](https://github.com/phil
 Frontend Requirements
 - npm must be installed
 
-In order to start the frontend server make sure to unzip the frontend project
-then install the project with these lines
+Backend Requirements
+- 3.10 > python > 3.7
+
+- Unzip the File
+- cd into the Frontend folder and do the following
+- then install the project with these lines
 
 ```bash
 npm install 
@@ -16,17 +20,14 @@ npm install next
 npm install react-google-login
 ```
 
-from there simply run it with these lines
+from there simply run it with this lines
 
 ```bash
 npm run dev
 ```
 
-Backend Requirements
-- 3.10 > python > 3.7
-
-In order to start the Backend server make sure to unzip the Backend project
-then install the project with these lines
+- cd out back into the backend folder 
+- install the project with these lines
 
 ```bash
 python3 -m venv env 
