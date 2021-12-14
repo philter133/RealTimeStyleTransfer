@@ -16,7 +16,28 @@ npm install next
 npm install react-google-login
 ```
 
-In order to start the frontend server make sure to unzip the frontend project
+from there simply run it with these lines
+
+```bash
+npm run dev
+```
+
+Backend Requirements
+- 3.10 > python > 3.7
+
+In order to start the Backend server make sure to unzip the Backend project
 then install the project with these lines
 
+```bash
+python3 -m venv env 
+source env/bin/activate
+pip install -r requirements.txt
+```
+
 from there simply run it with these lines
+
+```bash
+flask run
+```
+
+Now the project is ready to be used
