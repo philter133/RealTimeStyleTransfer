@@ -11,6 +11,7 @@ from VGG import VGGModel
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+# loads a image
 def load_image(img: typing.Union[bytes, str],
                size: int):
     transformer_list = [transforms.Resize((size, size), transforms.InterpolationMode.BICUBIC),
@@ -29,6 +30,7 @@ def load_image(img: typing.Union[bytes, str],
     return image_arr
 
 
+# displays a image on the users screen
 def show_image(img: torch.Tensor):
     image = img.cpu().clone()
     image = torch.squeeze(image, dim=0)
@@ -41,6 +43,7 @@ def show_image(img: torch.Tensor):
     return im
 
 
+# gets the loss for the model
 def get_loss(ground_truth: typing.List[torch.Tensor],
              layer_list: typing.List[torch.Tensor],
              weights: torch.Tensor) -> torch.Tensor:
@@ -52,6 +55,7 @@ def get_loss(ground_truth: typing.List[torch.Tensor],
     return loss
 
 
+# gets the gram matrix
 def gram_matrix(matrix: torch.Tensor):
     (batch, channels, rows, columns) = matrix.size()
 
@@ -64,6 +68,7 @@ def gram_matrix(matrix: torch.Tensor):
     return gram / (channels * rows * columns)
 
 
+# normalize's the images
 def normalize_images(tensor: torch.Tensor,
                      mean: torch.Tensor,
                      std: torch.Tensor):
@@ -73,6 +78,7 @@ def normalize_images(tensor: torch.Tensor,
     return (tensor - mean) / std
 
 
+# denormalize's the images
 def denormalize_images(tensor,
                        mean,
                        std):
@@ -82,6 +88,7 @@ def denormalize_images(tensor,
     return (tensor * std) + mean
 
 
+# Makes a white noise
 def white_noise_image(size):
     return torch.from_numpy(np.random.rand(3, size, size))
 
@@ -149,6 +156,7 @@ class NeuralStyleTransfer:
 
         self.__optimizer = torch.optim.Adam([self.__input], lr)
 
+    # train one epoch
     def train_one_adam(self, steps):
         for i in range(steps):
             self.__optimizer.zero_grad()
@@ -170,36 +178,11 @@ class NeuralStyleTransfer:
             full_loss.backward()
 
             self.__optimizer.step()
-            print(full_loss)
 
-        # return full_loss
-
-        # with torch.no_grad():
-        #     # temp = torch.clamp(self.__input, 0, 1)
-        #     temp = denormalize_images(self.__input, self.__mean, self.__std)
-        #     show_image(temp)
-
+    # get image
     def get_image(self):
-
         with torch.no_grad():
             # temp = torch.clamp(self.__input, 0, 1)
             temp = denormalize_images(self.__input, self.__mean, self.__std)
             show_image(temp)
             return show_image(temp)
-
-
-
-if __name__ == '__main__':
-    nst = NeuralStyleTransfer("D:/Postman/mosaic.jpg",
-                              "D:/Postman/me.jpg",
-                              500,
-                              "e",
-                              True,
-                              True,
-                              [1, 1, 1, 1, 1],
-                              1e-2,
-                              1e5,
-                              0.01)
-
-    for i in range(100):
-        nst.train_one_adam(100)

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
-
+# The coutner part vgg network
 class VGG16(nn.Module):
 
     def __init__(self):

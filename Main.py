@@ -9,7 +9,7 @@ from Models.Transformer import TransformerNetwork
 # Set Random Seed
 torch.manual_seed(108)
 
-
+# Adds style in real time by training this model
 class RealTimeStyleTransfer:
 
     def __init__(self,
