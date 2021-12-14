@@ -11,7 +11,7 @@ Backend Requirements
 - 3.10 > python > 3.7
 
 - Unzip the File
-- cd into the Frontend folder and do the following
+- cd into the Frontend folder
 - then install the project with these lines
 
 ```bash
@@ -20,7 +20,7 @@ npm install next
 npm install react-google-login
 ```
 
-from there simply run it with this lines
+from there simply run it with this line
 
 ```bash
 npm run dev
@@ -35,7 +35,7 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-from there simply run it with these lines
+from there simply run it with this line
 
 ```bash
 flask run
